@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F4F2EC">
+<meta name="robots" content="noindex">
+<link rel="apple-touch-icon" href="icon-180.png">
+<title>栄養の買い足し</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700&display=swap">
+<style>
+:root{
+  color-scheme:light;
+  --bg:#F4F2EC; --surface:#FFFFFF; --ink:#1E2320; --muted:#5E6661; --line:#DDDAD0; --line-strong:#B4B0A3;
+  --accent:#0F6E50; --accent-ink:#FFFFFF; --accent-soft:#E2F0E9;
+  --good:#0ca30c; --warn:#fab219; --crit:#d03b3b; --crit-ink:#A62828; --track:#ECE9E0;
+}
+*{box-sizing:border-box}
+html{padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Zen Kaku Gothic New","Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic UI","Meiryo",system-ui,sans-serif;font-size:16px;line-height:1.55;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:620px;margin:0 auto;padding-inline:16px;padding-block:18px 48px}
+
+header{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:14px}
+h1{margin:0;font-size:20px;font-weight:700;letter-spacing:.02em}
+.stamp{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;text-align:right}
+h2{margin:28px 0 8px;font-size:16px;font-weight:700}
+.note{margin:0 0 10px;font-size:13px;color:var(--muted)}
+
+.gate{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px 18px;text-align:center}
+.gate p{margin:0 0 14px;color:var(--muted);font-size:14px}
+.btn{display:inline-block;min-height:48px;padding:0 22px;border-radius:12px;border:0;background:var(--accent);color:var(--accent-ink);font-weight:700}
+.btn.ghost{background:none;border:1px solid var(--line-strong);color:var(--ink);font-weight:500}
+
+/* 足りない栄養 */
+.meters{list-style:none;margin:0;padding:6px 0;background:var(--surface);border:1px solid var(--line);border-radius:14px}
+.meter{display:grid;grid-template-columns:7.2em 1fr 3.4em;align-items:center;gap:10px;padding:7px 14px}
+.meter .nm{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar{position:relative;height:12px;border-radius:6px;background:var(--track);overflow:hidden}
+.bar i{position:absolute;inset:0 auto 0 0;border-radius:6px}
+.meter .pc{font-size:13px;font-variant-numeric:tabular-nums;text-align:right;color:var(--muted)}
+.meter.crit .pc{color:var(--crit-ink);font-weight:700}
+.meter.sel{background:var(--accent-soft)}
+.meter{cursor:pointer;border:0;background:none;width:100%;text-align:left}
+.legend{display:flex;flex-wrap:wrap;gap:12px;margin:8px 2px 0;font-size:12px;color:var(--muted)}
+.legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px;background:var(--c)}
+
+/* 提案 */
+.cards{display:grid;gap:10px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.card-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.card .nm{font-size:18px;font-weight:700}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.tag{font-size:12px;padding:1px 8px;border-radius:999px;background:var(--track);color:var(--muted)}
+.tag.usual{background:var(--accent-soft);color:var(--accent)}
+.serv{margin:6px 0 0;font-size:13px;color:var(--muted)}
+.gives{display:flex;flex-wrap:wrap;gap:6px 12px;margin-top:8px;font-size:14px}
+.gives b{font-variant-numeric:tabular-nums}
+.drop{flex:none;background:none;border:1px solid var(--line);border-radius:10px;padding:4px 10px;font-size:13px;color:var(--muted)}
+
+.tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:10px;scrollbar-width:none}
+.tabs button{flex:none;border:1px solid var(--line-strong);background:var(--surface);border-radius:999px;padding:6px 12px;font-size:14px}
+.tabs button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+
+.dropped{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:8px}
+.dropped button{border:1px dashed var(--line-strong);background:none;border-radius:999px;padding:4px 12px;font-size:14px}
+.empty{padding:16px;color:var(--muted);font-size:14px;background:var(--surface);border:1px solid var(--line);border-radius:14px}
+.toast{position:fixed;left:16px;right:16px;bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:5;max-width:560px;margin:0 auto;padding:10px 14px;border-radius:10px;background:var(--ink);color:var(--bg);font-size:14px;display:flex;gap:12px;align-items:center;justify-content:space-between}
+.toast button{background:none;border:0;color:#9fe0c2;font-weight:700}
+.cov{margin-top:8px;font-size:12px;color:var(--muted)}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>栄養の買い足し</h1>
+    <div class="stamp" id="stamp"></div>
+  </header>
+
+  <div class="gate" id="gate" hidden>
+    <p id="gate-msg">数字はきよしさんのスプレッドシートから読みます。Googleでログインしてください。</p>
+    <button class="btn" id="login" type="button">Googleでログイン</button>
+  </div>
+
+  <main id="main" hidden>
+    <section aria-labelledby="h-need">
+      <h2 id="h-need">栄養の取れ具合（1日あたり）</h2>
+      <p class="note">棒が右端まで届けば目標です。押すと、その栄養が多い品だけを下に出します。</p>
+      <ul class="meters" id="meters"></ul>
+      <div class="legend">
+        <span style="--c:var(--crit)">目標の7割未満</span>
+        <span style="--c:var(--warn)">7割〜目標未満</span>
+        <span style="--c:var(--good)">目標以上</span>
+      </div>
+      <p class="cov" id="cov"></p>
+    </section>
+
+    <section aria-labelledby="h-sugg">
+      <h2 id="h-sugg">買い足すとよい品</h2>
+      <div class="tabs" id="tabs" role="group" aria-label="どの栄養で選ぶか"></div>
+      <p class="note" id="sugg-note"></p>
+      <div class="cards" id="cards"></div>
+    </section>
+
+    <section aria-labelledby="h-drop" id="drop-sec" hidden>
+      <h2 id="h-drop">候補から外した品</h2>
+      <p class="note">押すと候補に戻ります。</p>
+      <ul class="dropped" id="dropped"></ul>
+    </section>
+  </main>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden><span id="toast-msg"></span><button type="button" id="toast-undo" hidden>取り消す</button></div>
+
+<script>
+const CLIENT_ID = '697124096061-c4o5p75lgmttuokhug1l7bahus51fjcg.apps.googleusercontent.com';
+const SHEET_ID = '1oFh2-qXuOGqzIHZmeMO1HMZqrHlGE24n4QlxvzbKiNs';
+const SCOPE = 'https://www.googleapis.com/auth/spreadsheets';
+const REDIRECT = location.origin + location.pathname;
+const TOKEN_KEY = 'eiyou-token-v1';
+// スプシの月ごとのタブで、栄養素が並ぶ行（6〜26行目）
+const RANGES = ['月ごと!A6:F26', '目標!A2:D22', '月ごと!A46:C48', '候補の品!A2:AC400', '外した品!A2:B400', '品ごとのペース!A2:A400'];
+const NUT_NAMES = ['エネルギー','たんぱく質','脂質','炭水化物','食物繊維','食塩相当量','カリウム','カルシウム','マグネシウム','鉄','亜鉛','ビタミンA','ビタミンD','ビタミンE','ビタミンK','ビタミンB1','ビタミンB2','ビタミンB6','ビタミンB12','葉酸','ビタミンC'];
+
+const $ = s => document.querySelector(s);
+let data = null;        // { nuts, cands, dropped, usual }
+let pick = 'all';       // 'all' か栄養素名
+
+// ---- ログイン ----
+function readToken() {
+  try { const t = JSON.parse(localStorage.getItem(TOKEN_KEY) || 'null'); return t && t.exp > Date.now() + 60000 ? t.v : null; } catch (e) { return null; }
+}
+function saveToken(v, sec) { try { localStorage.setItem(TOKEN_KEY, JSON.stringify({ v, exp: Date.now() + sec * 1000 })); } catch (e) {} }
+function dropToken() { try { localStorage.removeItem(TOKEN_KEY); } catch (e) {} }
+function login() {
+  const state = Math.random().toString(36).slice(2);
+  try { sessionStorage.setItem('eiyou-state', state); } catch (e) {}
+  const q = new URLSearchParams({ client_id: CLIENT_ID, redirect_uri: REDIRECT, response_type: 'token', scope: SCOPE, include_granted_scopes: 'true', state });
+  location.href = 'https://accounts.google.com/o/oauth2/v2/auth?' + q;
+}
+function takeTokenFromUrl() {
+  if (!location.hash.includes('access_token=')) {
+    if (location.hash.includes('error=')) showGate('ログインが取り消されました。もう一度お試しください。');
+    return;
+  }
+  const h = new URLSearchParams(location.hash.slice(1));
+  let want = null; try { want = sessionStorage.getItem('eiyou-state'); } catch (e) {}
+  if (!want || h.get('state') === want) saveToken(h.get('access_token'), Number(h.get('expires_in') || 3600));
+  history.replaceState(null, '', REDIRECT);
+}
+function showGate(msg) {
+  $('#main').hidden = true; $('#gate').hidden = false;
+  if (msg) $('#gate-msg').textContent = msg;
+}
+
+// ---- スプシ ----
+async function api(path, opts = {}) {
+  const tok = readToken();
+  if (!tok) { login(); throw new Error('login'); }
+  const r = await fetch('https://sheets.googleapis.com/v4/spreadsheets/' + SHEET_ID + path, {
+    ...opts, headers: { Authorization: 'Bearer ' + tok, 'Content-Type': 'application/json', ...(opts.headers || {}) },
+  });
+  if (r.status === 401) { dropToken(); login(); throw new Error('login'); }
+  if (!r.ok) throw new Error('sheet ' + r.status);
+  return r.json();
+}
+async function load() {
+  const q = RANGES.map(r => 'ranges=' + encodeURIComponent(r)).join('&');
+  const res = await api('/values:batchGet?' + q + '&valueRenderOption=UNFORMATTED_VALUE');
+  const [month, target, cov, cand, drop, pace] = res.valueRanges.map(v => v.values || []);
+  const nuts = month.map((r, i) => ({
+    name: r[0], unit: r[1], target: num(r[2]), now: num(r[3]), ratio: r[4] === '' || r[4] == null ? null : num(r[4]),
+    dir: (target[i] || [])[3] || '',
+  }));
+  const cands = cand.filter(r => r[0] && r[3]).map(r => ({
+    name: String(r[0]), serving: num(r[3]), hint: r[4] || '', sold: r[5] || '', cat: r[6] || '', cook: r[7] || '',
+    per: Object.fromEntries(NUT_NAMES.map((n, k) => [n, num(r[8 + k])])),
+  }));
+  data = {
+    nuts, cands,
+    dropped: drop.filter(r => r[0]).map(r => String(r[0])),
+    usual: new Set(pace.filter(r => r[0]).map(r => String(r[0]))),
+    cov: { paced: num((cov[0] || [])[1]), bought: num((cov[1] || [])[1]) },
+  };
+  $('#stamp').textContent = '読み込み ' + new Date().toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+function num(v) { const n = Number(v); return Number.isFinite(n) ? n : 0; }
+
+async function writeDropped(list) {
+  await api('/values/' + encodeURIComponent('外した品!A2:B400') + ':clear', { method: 'POST', body: '{}' });
+  if (!list.length) return;
+  const today = new Date().toISOString().slice(0, 10);
+  await api('/values/' + encodeURIComponent('外した品!A2') + '?valueInputOption=RAW', {
+    method: 'PUT', body: JSON.stringify({ values: list.map(n => [n, today]) }),
+  });
+}
+
+// ---- 選ぶ ----
+// 目標に届いていない栄養（エネルギー・食塩・割合で見る物は除く）
+function shortNuts() {
+  return data.nuts.filter(n => n.dir === '以上' && n.target > 0 && n.ratio != null && n.ratio < 1)
+    .sort((a, b) => a.ratio - b.ratio);
+}
+function saltHigh() {
+  const s = data.nuts.find(n => n.name === '食塩相当量');
+  return s && s.ratio != null && s.ratio >= 1;
+}
+function suggest() {
+  const short = shortNuts();
+  const pool = data.cands.filter(c => !data.dropped.includes(c.name));
+  if (pick !== 'all') {
+    const n = data.nuts.find(x => x.name === pick);
+    return {
+      focus: [n],
+      list: pool.map(c => ({ c, score: c.per[n.name] / (n.target || 1), parts: [[n, c.per[n.name] / (n.target || 1)]] }))
+        .filter(x => x.score > 0).sort((a, b) => b.score - a.score).slice(0, 10),
+    };
+  }
+  if (!short.length) return { focus: [], list: [] };
+  const list = pool.map(c => {
+    const parts = short.map(n => {
+      const gap = Math.max(n.target - n.now, n.target * 0.05);
+      return [n, c.per[n.name] / n.target, Math.min(c.per[n.name] / gap, 1) * (1 - n.ratio)];
+    });
+    let score = parts.reduce((a, p) => a + p[2], 0);
+    if (saltHigh()) score -= c.per['食塩相当量'] / 7.5;
+    return { c, score, parts: parts.filter(p => p[1] >= 0.05).sort((a, b) => b[1] - a[1]).slice(0, 4) };
+  }).filter(x => x.score > 0 && x.parts.length).sort((a, b) => b.score - a.score).slice(0, 10);
+  return { focus: short, list };
+}
+
+// ---- 描く ----
+function colorOf(n) {
+  if (n.ratio == null) return 'var(--track)';
+  if (n.dir === '未満') return n.ratio < 1 ? 'var(--good)' : 'var(--crit)';
+  if (n.dir === '前後') return n.ratio >= 0.9 && n.ratio <= 1.1 ? 'var(--good)' : 'var(--warn)';
+  return n.ratio < 0.7 ? 'var(--crit)' : n.ratio < 1 ? 'var(--warn)' : 'var(--good)';
+}
+function render() {
+  $('#gate').hidden = true; $('#main').hidden = false;
+  const ms = $('#meters'); ms.replaceChildren();
+  const shown = data.nuts.filter(n => n.dir === '以上' || n.dir === '未満' || n.dir === '前後');
+  const order = shown.slice().sort((a, b) => (a.dir === '以上' ? a.ratio ?? 9 : 9) - (b.dir === '以上' ? b.ratio ?? 9 : 9));
+  for (const n of order) {
+    const li = document.createElement('li');
+    const b = document.createElement('button');
+    b.type = 'button';
+    const crit = n.dir === '以上' && n.ratio != null && n.ratio < 0.7;
+    b.className = 'meter' + (crit ? ' crit' : '') + (pick === n.name ? ' sel' : '');
+    const nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = n.name;
+    const bar = document.createElement('span'); bar.className = 'bar';
+    const fill = document.createElement('i');
+    fill.style.width = Math.round(Math.min(n.ratio || 0, 1) * 100) + '%';
+    fill.style.background = colorOf(n);
+    bar.append(fill);
+    const pc = document.createElement('span'); pc.className = 'pc';
+    pc.textContent = n.ratio == null ? '—' : Math.round(n.ratio * 100) + '%';
+    b.append(nm, bar, pc);
+    b.setAttribute('aria-label', n.name + ' 目標の' + pc.textContent + (n.dir === '未満' ? '（少ないほどよい）' : ''));
+    if (n.dir === '以上') b.addEventListener('click', () => { pick = pick === n.name ? 'all' : n.name; render(); });
+    li.append(b); ms.append(li);
+  }
+  const cv = data.cov;
+  $('#cov').textContent = cv.bought
+    ? '計算に入っている品：' + cv.paced + '品（2回以上買った品）／買ったことのある品：' + cv.bought + '品'
+    : 'まだ買い物の記録がありません。買い物帳で「片付ける」を押すと、ここに数字が入ります。';
+
+  // 絞り込みのボタン
+  const tabs = $('#tabs'); tabs.replaceChildren();
+  const short = shortNuts();
+  const tabNames = ['all', ...short.map(n => n.name)];
+  if (pick !== 'all' && !tabNames.includes(pick)) tabNames.push(pick);
+  for (const t of tabNames) {
+    const b = document.createElement('button'); b.type = 'button';
+    b.textContent = t === 'all' ? 'まとめて補える品' : t;
+    b.setAttribute('aria-pressed', String(pick === t));
+    b.addEventListener('click', () => { pick = t; render(); });
+    tabs.append(b);
+  }
+
+  const { focus, list } = suggest();
+  $('#sugg-note').textContent = pick === 'all'
+    ? (focus.length ? '足りない栄養（' + focus.slice(0, 4).map(n => n.name).join('・') + (focus.length > 4 ? 'ほか' : '') + '）を、1回分でまとめて補える順に並べています。' : '')
+    : pick + 'が多い順に、1回分で目標の何割になるかを出しています。';
+  const cards = $('#cards'); cards.replaceChildren();
+  if (!list.length) {
+    const p = document.createElement('p'); p.className = 'empty';
+    p.textContent = pick === 'all' && !focus.length
+      ? (cv.paced ? '目標に届いていない栄養はありません。' : '2回以上買った品がまだ無いので、足りない栄養をまだ出せません。上の棒を押すと、その栄養が多い品は見られます。')
+      : '出せる品がありません。';
+    cards.append(p);
+  }
+  for (const { c, parts } of list) {
+    const card = document.createElement('article'); card.className = 'card';
+    const top = document.createElement('div'); top.className = 'card-top';
+    const nm = document.createElement('div'); nm.className = 'nm'; nm.textContent = c.name;
+    const drop = document.createElement('button'); drop.type = 'button'; drop.className = 'drop'; drop.textContent = '候補から外す';
+    drop.addEventListener('click', () => dropItem(c.name));
+    top.append(nm, drop);
+    const tags = document.createElement('div'); tags.className = 'tags';
+    for (const t of [data.usual.has(c.name) ? 'いつも買う品' : '', c.cat, c.cook]) {
+      if (!t) continue;
+      const s = document.createElement('span'); s.className = 'tag' + (t === 'いつも買う品' ? ' usual' : ''); s.textContent = t; tags.append(s);
+    }
+    const serv = document.createElement('p'); serv.className = 'serv';
+    serv.textContent = '1回分：' + (c.hint ? c.hint + '（' + Math.round(c.serving) + 'g）' : Math.round(c.serving) + 'g') + (c.sold ? '　売り方：' + c.sold : '');
+    const gives = document.createElement('div'); gives.className = 'gives';
+    for (const [n, r] of parts) {
+      const s = document.createElement('span');
+      s.append(n.name + ' ');
+      const b = document.createElement('b'); b.textContent = '目標の' + Math.round(r * 100) + '%';
+      s.append(b);
+      gives.append(s);
+    }
+    card.append(top, tags, serv, gives);
+    cards.append(card);
+  }
+
+  const ds = $('#dropped'); ds.replaceChildren();
+  $('#drop-sec').hidden = !data.dropped.length;
+  for (const name of data.dropped) {
+    const li = document.createElement('li');
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = name + ' ↺';
+    b.setAttribute('aria-label', name + 'を候補に戻す');
+    b.addEventListener('click', () => restore(name));
+    li.append(b); ds.append(li);
+  }
+}
+
+// ---- 外す・戻す ----
+let toastTimer = null, undoFn = null;
+function toast(msg, undo) {
+  $('#toast-msg').textContent = msg;
+  undoFn = undo || null;
+  $('#toast-undo').hidden = !undo;
+  $('#toast').hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { $('#toast').hidden = true; undoFn = null; }, 4000);
+}
+$('#toast-undo').addEventListener('click', () => { const f = undoFn; $('#toast').hidden = true; if (f) f(); });
+async function saveDropped(next, msg, undo) {
+  const before = data.dropped;
+  data.dropped = next; render();
+  try { await writeDropped(next); toast(msg, undo); }
+  catch (e) { if (e.message !== 'login') { data.dropped = before; render(); toast('保存できませんでした。電波の良い所でもう一度押してください'); } }
+}
+function dropItem(name) {
+  if (data.dropped.includes(name)) return;
+  saveDropped([...data.dropped, name], '「' + name + '」を候補から外しました', () => restore(name));
+}
+function restore(name) {
+  saveDropped(data.dropped.filter(n => n !== name), '「' + name + '」を候補に戻しました');
+}
+
+// ---- はじまり ----
+$('#login').addEventListener('click', login);
+async function start() {
+  takeTokenFromUrl();
+  if (!readToken()) {
+    // 一度ログインしたことがあれば、切れた時は自動でログインし直す
+    let was = false; try { was = localStorage.getItem('eiyou-was-in') === '1'; } catch (e) {}
+    if (was && !location.hash.includes('error=')) { login(); return; }
+    showGate(); return;
+  }
+  try { localStorage.setItem('eiyou-was-in', '1'); } catch (e) {}
+  try { await load(); render(); }
+  catch (e) { if (e.message !== 'login') showGate('スプレッドシートを読めませんでした（' + e.message + '）。もう一度ログインしてください。'); }
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden || !data) return;
+  if (!readToken()) { login(); return; }
+  load().then(render).catch(() => {});
+});
+start();
+</script>
+</body>
+</html>

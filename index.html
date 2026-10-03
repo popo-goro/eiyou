@@ -57,6 +57,7 @@ h2{margin:28px 0 8px;font-size:16px;font-weight:700}
 .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
 .tag{font-size:12px;padding:1px 8px;border-radius:999px;background:var(--track);color:var(--muted)}
 .tag.usual{background:var(--accent-soft);color:var(--accent)}
+.tag.warn{background:#FBE3E3;color:var(--crit-ink)}
 .serv{margin:6px 0 0;font-size:13px;color:var(--muted)}
 .gives{display:flex;flex-wrap:wrap;gap:6px 12px;margin-top:8px;font-size:14px}
 .gives b{font-variant-numeric:tabular-nums}
@@ -228,6 +229,8 @@ function suggest() {
     });
     let score = parts.reduce((a, p) => a + p[2], 0);
     if (saltHigh()) score -= c.per['食塩相当量'] / 7.5;
+    // ビタミンAの上限を1回分で超える品（レバー類）は、まとめての順位では後ろへ回す
+    if (c.per['ビタミンA'] > 2700) score -= 1;
     return { c, score, parts: parts.filter(p => p[1] >= 0.05).sort((a, b) => b[1] - a[1]).slice(0, 4) };
   }).filter(x => x.score > 0 && x.parts.length).sort((a, b) => b.score - a.score).slice(0, 10);
   return { focus: short, list };
@@ -302,9 +305,13 @@ function render() {
     drop.addEventListener('click', () => dropItem(c.name));
     top.append(nm, drop);
     const tags = document.createElement('div'); tags.className = 'tags';
-    for (const t of [data.usual.has(c.name) ? 'いつも買う品' : '', c.cat, c.cook]) {
+    // ビタミンAは1日の上限（2,700μg）を1回分で超える品がある（レバー類）
+    const tooMuchA = c.per['ビタミンA'] > 2700;
+    for (const t of [data.usual.has(c.name) ? 'いつも買う品' : '', c.cat, c.cook, tooMuchA ? '食べすぎ注意：ビタミンAの1日の上限を1回分で超える' : '']) {
       if (!t) continue;
-      const s = document.createElement('span'); s.className = 'tag' + (t === 'いつも買う品' ? ' usual' : ''); s.textContent = t; tags.append(s);
+      const s = document.createElement('span');
+      s.className = 'tag' + (t === 'いつも買う品' ? ' usual' : '') + (t.startsWith('食べすぎ') ? ' warn' : '');
+      s.textContent = t; tags.append(s);
     }
     const serv = document.createElement('p'); serv.className = 'serv';
     serv.textContent = '1回分：' + (c.hint ? c.hint + '（' + Math.round(c.serving) + 'g）' : Math.round(c.serving) + 'g') + (c.sold ? '　売り方：' + c.sold : '');
